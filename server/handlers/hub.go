@@ -1,18 +1,16 @@
 package handlers
 
-
 type Hub struct {
-	
 }
 
-func () Join() bool {
-	return 
+func (h *Hub) Join() bool {
+	return false
 }
 
-func () Send() bool {
-	return 
+func (h *Hub) Send() bool {
+	return false
 }
 
-func () Leave() bool {
-	return 
+func (h *Hub) Leave() bool {
+	return false
 }

@@ -8,20 +8,19 @@ type Connection struct {
 	status string
 }
 
-
-
 type Session struct {
 	connection Connection
 }
 
 func (session Session) Read() bool {
-	return 
+	fmt.Println("I'm reading")
+	return false
 }
 
 func (session Session) Write() bool {
-	return 
+	return false
 }
 
 func (session Session) Send() bool {
-	return 
+	return false
 }
