@@ -1,21 +1,25 @@
 package server
 
-import ("fmt"
-		"https://github.com/JanusDG/real-time-group-chat/session"
-	)
+import (
+	"github.com/JanusDG/real-time-group-chat/server/session"
+)
 
 type Server struct {
-	session Session
+	session session.Session
 }
 
-func (server Server) HandleConnection() bool {
-	return 
+func NewServer() *Server {
+	return &Server{}
 }
 
-func (server Server) CreateSession() bool {
-	return 
+func (s *Server) HandleConnection() bool {
+	return false
 }
 
-func (server Server) RunSession() bool {
-	return 
+func (s *Server) CreateSession() bool {
+	return false
+}
+
+func (s *Server) RunSession() bool {
+	return false
 }

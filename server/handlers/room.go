@@ -1,18 +1,15 @@
 package handlers
 
+type Room struct{}
 
-type Room struct {
-	
+func (r *Room) Join() bool {
+	return false
 }
 
-func () Join() bool {
-	return 
+func (r *Room) BroadCast() bool {
+	return false
 }
 
-func () BroadCast() bool {
-	return 
-}
-
-func () Leave() bool {
-	return 
+func (r *Room) Leave() bool {
+	return false
 }
