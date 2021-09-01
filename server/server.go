@@ -1,19 +1,13 @@
 package server
 
-import ( "fmt"
-	// "html"
-	"log"
-	"net/http"
-	"strconv"
-	"github.com/gorilla/websocket"
-    // "sync"
-	// "github.com/JanusDG/real-time-group-chat/server/session"
+import (
+		"fmt"
+		"log"
+		"net/http"
+		"strconv"
+
+		"github.com/gorilla/websocket"
 )
-
-
-func Dudka() {
-	fmt.Println("Piupiu")
-}
 
 type Server struct {
 	Port int 
@@ -21,8 +15,6 @@ type Server struct {
 	// session session.Session
 }
 
-// initializer
-// func NewServer(port int) *Server { return &Server{port} }
 
 // constructor
 func (s *Server) Init(port int) { 
@@ -37,18 +29,21 @@ func (s *Server) RunServer() {
 		"/hello", 
 		func (w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "hello")} )
 
-
     log.Fatal(http.ListenAndServe(":" + strconv.Itoa(s.Port), nil))
 }
 
+
+//ToDo
 // func (s *Server) HandleConnection() bool {
 // 	return false
 // }
 
+//ToDo
 // func (s *Server) CreateSession() bool {
 // 	return false
 // }
 
+//ToDo
 // func (s *Server) RunSession() bool {
 // 	return false
 // }
