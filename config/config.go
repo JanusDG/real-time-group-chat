@@ -14,7 +14,8 @@ type Configurations struct {
 }
 
 type ServerConfigurations struct {
-	Port int
+	Port		   int
+	DEBUG_ON       bool
 }
 
 

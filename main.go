@@ -12,7 +12,8 @@ func main() {
 	var config = config.GetConf()
 
 	serv := new(server.Server)
-	serv.Init(config.Server.Port)
+	serv.Init(config.Server.Port,
+			  config.Server.DEBUG_ON)
 
 	
 	if (config.DEBUG_ON){ fmt.Println("Created server instance on port:",serv.Port) }
