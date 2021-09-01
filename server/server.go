@@ -13,9 +13,7 @@ type Server struct {
 	Port int
 	Debug_on bool
 	upgrader websocket.Upgrader
-	// session session.Session
 }
-
 
 // constructor
 func (s *Server) Init(port int, DEBUG_ON bool) { 
@@ -23,11 +21,13 @@ func (s *Server) Init(port int, DEBUG_ON bool) {
 	s.Debug_on = DEBUG_ON
 }
 
+// TODO: no global variables
 var upgrader = websocket.Upgrader{
     ReadBufferSize:  1024,
     WriteBufferSize: 1024,
 }
 
+// TODO make this a method somehow
 func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
     upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -70,8 +70,6 @@ func reader(conn *websocket.Conn) {
     }
 }
 
-
-
 func (s *Server) RunServer() {
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 
@@ -86,20 +84,3 @@ func (s *Server) RunServer() {
 
     log.Fatal(http.ListenAndServe(":" + strconv.Itoa(s.Port), nil))
 }
-
-//ToDo
-// func (s *Server) HandleConnection() bool {
-// 	return false
-// }
-
-//ToDo
-// func (s *Server) CreateSession() bool {
-// 	return false
-// }
-
-//ToDo
-// func (s *Server) RunSession() bool {
-// 	return false
-// }
-
-
