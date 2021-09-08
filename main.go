@@ -1,23 +1,21 @@
 package main
 
 import (
-		"fmt"
-		"os"
+	"fmt"
 
-		"github.com/JanusDG/real-time-group-chat/server"
-		"github.com/JanusDG/real-time-group-chat/config"
+	"github.com/JanusDG/real-time-group-chat/config"
+	"github.com/JanusDG/real-time-group-chat/server"
 )
 
 func main() {
-	var config = config.GetConf()
+	var cfg = config.GetConf()
 
-	serv := new(server.Server)
-	serv.Init(config.Server.Port,
-			  config.Server.DEBUG_ON)
+	serv := server.NewServer(cfg.Server.Port,
+		cfg.Server.DEBUG_ON)
 
-	
-	if (config.DEBUG_ON){ fmt.Println("Created server instance on port:",serv.Port) }
-	if (config.DEBUG_ON){ fmt.Println(os.Getenv("DEBUG_ON")) }
-	
+	if cfg.DEBUG_ON {
+		fmt.Println("Created server instance on port:", serv.Port)
+	}
+
 	serv.RunServer()
 }

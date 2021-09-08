@@ -1,5 +1,5 @@
 #! /bin/sh
-go build -o main
+make build
 
 xdg-open http://localhost:8080/
 
