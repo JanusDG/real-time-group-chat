@@ -1,5 +1,9 @@
 package comms
 
 type Mess struct {
-	id int 
+	Id int 
+}
+
+func NewMess(id int) *Mess {
+	return &Mess{Id: id}
 }
