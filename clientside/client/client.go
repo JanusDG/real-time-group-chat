@@ -10,19 +10,19 @@ import (
 	"bufio"
 
 	"github.com/gorilla/websocket"
-	"github.com/JanusDG/real-time-group-chat/transfer"
+	"github.com/JanusDG/real-time-group-chat/odt"
 
 )
 
 type Client struct {
-	
+	Id int
 }
 
 func NewClient() *Client{
-	return &Client{}
+	return &Client{Id: -1}
 }
 
-func (*Client) Init() {
+func (c *Client) Init() {
 	var addr = flag.String("addr", "localhost:8080", "http service address")
 
 	flag.Parse()
@@ -34,23 +34,31 @@ func (*Client) Init() {
 	u := url.URL{Scheme: "ws", Host: *addr, Path: "/ws"}
 	log.Printf("connecting to %s", u.String())
 
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("dial:", err)
 	}
-	defer c.Close()
+	defer conn.Close()
 
 	done := make(chan struct{})
 
 	go func() {
 		defer close(done)
 		for {
-			var m = comms.Mess{}
-			err := c.ReadJSON(&m)
+			var m = comms.Message{}
+			err := conn.ReadJSON(&m)
 			if err != nil {
 				log.Println("Error reading json.", err)
 			}
 			log.Printf("Got message: %#v\n", m)
+
+			// var m = comms.InitUser{}
+			// err := conn.ReadJSON(&m)
+			// if err != nil {
+			// 	log.Println("Error reading json.", err)
+			// }
+			// log.Printf("Got message: %#v\n", m)
+			// c.Id = m.Id
 		}
 	}()
 
@@ -70,16 +78,24 @@ func (*Client) Init() {
 		case <-done:
 			return
 		case in := <-input:
-			err := c.WriteMessage(websocket.TextMessage, []byte(in))
+			// TODO handle the case if id is not defined yet
+			// TODO no hardcode
+			var message = comms.NewMessage(1, 2, in)
+
+			var err = conn.WriteJSON(message)
 			if err != nil {
-				log.Println("write:", err)
-				return
+				log.Println(err)
 			}
+			// err := conn.WriteMessage(websocket.TextMessage, []byte(in))
+			// if err != nil {
+			// 	log.Println("write:", err)
+			// 	return
+			// }
 
 		case <-interrupt:
 			log.Println("interrupt")
 
-			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
 				log.Println("write close:", err)
 				return

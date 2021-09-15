@@ -39,6 +39,8 @@ cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+github.com/JanusDG/real-time-group-chat/comms v0.0.0-20210915094432-69ad2aab8e9f h1:lKN4lsi2iD74wD+BdNz1CeGQnMkNjUyTkq1LozPdZf8=
+github.com/JanusDG/real-time-group-chat/comms v0.0.0-20210915094432-69ad2aab8e9f/go.mod h1:X5DO/TIdg0jJ2m9cXkvYIzZ25OP0t7QRpE7CG1ZaBBY=
 github.com/JanusDG/real-time-group-chat/transfer v0.0.0-20210915100040-1649b4dbaac0 h1:1ETNCLJnfVB1jxg7DpoZbW6T7ZEQxtj1Z4n8WpAsug0=
 github.com/JanusDG/real-time-group-chat/transfer v0.0.0-20210915100040-1649b4dbaac0/go.mod h1:qlKUyMh8R3KaeA/Um+yLXYco1ajVOBk6RT0Mz2t1w2I=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=

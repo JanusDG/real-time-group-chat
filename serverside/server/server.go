@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/JanusDG/real-time-group-chat/transfer"
+	"github.com/JanusDG/real-time-group-chat/odt"
 	"github.com/gorilla/websocket"
 )
 
@@ -15,10 +15,16 @@ type Server struct {
 	Debug_on bool
 	Upgrader websocket.Upgrader
 	Counter  int
+	Connections []UserConnection
 }
 
-type UserInit struct {
-	id int
+type UserConnection struct {
+	Id 		int
+	Conn 	*websocket.Conn
+}
+
+func NewUserConnection(id int,conn *websocket.Conn) *UserConnection{
+	return &UserConnection{Id: id, Conn: conn}
 }
 
 // func Init - initializer for server instance
@@ -33,25 +39,37 @@ func NewServer(port int, debug_on bool) *Server {
 		Upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
-		}}
+		}, Connections: make([]UserConnection, 0)}
 }
 
 func (s *Server) reader(conn *websocket.Conn) {
 	for {
-		// read in a message
-		messageType, p, err := conn.ReadMessage()
+		var m = comms.Message{}
+		err := conn.ReadJSON(&m)
 		if err != nil {
-			log.Printf("func: reader, error in message read, %s", err)
-			return
+			log.Println("Error reading json.", err)
 		}
+		log.Printf("Got message: %#v\n", m)
 
-		log.Println("user said " + string(p))
-
-		// write it back
-		if err := conn.WriteMessage(messageType, []byte("u sent me \""+string(p)+"\"")); err != nil {
-			log.Printf("func: reader, error in message write, %s", err)
-			return
+		err = s.Connections[1].Conn.WriteJSON(m)
+		if err != nil {
+			log.Println(err)
 		}
+		// read in a message
+		// messageType, p, err := conn.ReadMessage()
+		// if err != nil {
+		// 	log.Printf("func: reader, error in message read, %s", err)
+		// 	return
+		// }
+
+		// log.Println("user said " + string(p))
+
+		// // write it back
+		// if err := conn.WriteMessage(messageType, []byte("u sent me \""+string(p)+"\"")); err != nil {
+		// 	log.Printf("func: reader, error in message write, %s", err)
+		// 	return
+		// }
+		
 
 	}
 }
@@ -60,22 +78,26 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	s.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	// upgrade this connection to a WebSocket
-	// connection
 	ws, err := s.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 	}
 
-	log.Println("Client Connected")
-	var init = comms.NewMess(s.Counter)
+	log.Println("Client #%s Connected", s.Counter)
+
+	// Init User
+	var init = comms.NewInitUser(s.Counter)
+	log.Println(init.Id)
+	// err = ws.WriteJSON(init)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	var newUser = NewUserConnection(s.Counter, ws)
+	s.Connections = append(s.Connections, *newUser)
+		
+		
 	// TODO make mutex here
 	s.Counter = s.Counter + 1
-	log.Println(init.Id)
-	err = ws.WriteJSON(init)
-	if err != nil {
-		log.Println(err)
-	}
 
 	// err = ws.WriteMessage(1, []byte("Hi Client!"))
 	// if err != nil {
@@ -84,7 +106,6 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	// listen indefinitely for new messages coming
 	// through on our WebSocket connection
-
 	s.reader(ws)
 }
 
