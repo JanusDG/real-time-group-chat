@@ -1,23 +1,21 @@
 package config
 
 import (
-		"fmt"
+	"log"
 
-		"github.com/spf13/viper"
-
+	"github.com/spf13/viper"
 )
 
 type Configurations struct {
-	Server         ServerConfigurations
-	IMPORTANT_VAR  int 
-	DEBUG_ON       bool
+	Server        ServerConfigurations
+	IMPORTANT_VAR int
+	DEBUG_ON      bool
 }
 
 type ServerConfigurations struct {
-	Port		   int
-	DEBUG_ON       bool
+	Port     int
+	DEBUG_ON bool
 }
-
 
 func GetConf() *Configurations {
 	viper.SetConfigName("config")
@@ -26,16 +24,15 @@ func GetConf() *Configurations {
 	viper.SetConfigType("yml")
 
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Error reading config file, %s", err)
+		log.Printf("Error reading config file, %s", err)
 	}
-	
+
 	viper.SetDefault("IMPORTANT_VAR", 42069)
 
 	var configuration Configurations
-	err := viper.Unmarshal(&configuration)
 
-	if err != nil {
-		fmt.Printf("Unable to decode into struct, %v", err)
+	if err := viper.Unmarshal(&configuration); err != nil {
+		log.Printf("Unable to decode into struct, %v", err)
 	}
 
 	return &configuration
