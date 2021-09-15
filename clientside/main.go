@@ -2,7 +2,8 @@ package main
 
 import (
 	// "fmt"
-	"real-time-group-chat/clientside/client"
+	// "real-time-group-chat/clientside/client"
+	"github.com/JanusDG/real-time-group-chat/clientside/client"
 	// "real-time-group-chat/clientside/connection"
 )
 

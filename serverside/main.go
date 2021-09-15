@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"real-time-group-chat/serverside/config"
-	"real-time-group-chat/serverside/server"
+	"github.com/JanusDG/real-time-group-chat/serverside/config"
+	"github.com/JanusDG/real-time-group-chat/serverside/server"
 )
 
 func main() {

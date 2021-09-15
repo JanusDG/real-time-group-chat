@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"time"
 	"bufio"
-	// "json"
 
 	"github.com/gorilla/websocket"
 	"github.com/JanusDG/real-time-group-chat/transfer"
@@ -48,17 +47,10 @@ func (*Client) Init() {
 		for {
 			var m = comms.Mess{}
 			err := c.ReadJSON(&m)
-			// if err != nil {
-			// 	log.Println("read:", err)
-			// 	return
-			// }
 			if err != nil {
 				log.Println("Error reading json.", err)
 			}
 			log.Printf("Got message: %#v\n", m)
-			// log.Printf("recv: %s", message)
-			// var t = json.Unmarshal()
-			// log.Printf(message)
 		}
 	}()
 
@@ -73,9 +65,6 @@ func (*Client) Init() {
 	}()
 
 
-	// ticker := time.NewTicker(time.Second)
-	// defer ticker.Stop()
-
 	for {
 		select {
 		case <-done:
@@ -87,17 +76,9 @@ func (*Client) Init() {
 				return
 			}
 
-		// case t := <-ticker.C:
-		// 	err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
-		// 	if err != nil {
-		// 		log.Println("write:", err)
-		// 		return
-		// 	}
 		case <-interrupt:
 			log.Println("interrupt")
 
-			// Cleanly close the connection by sending a close message and then
-			// waiting (with timeout) for the server to close the connection.
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
 				log.Println("write close:", err)
