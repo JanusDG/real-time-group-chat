@@ -1,0 +1,4 @@
+github.com/JanusDG/real-time-group-chat/transfer v0.0.0-20210915100040-1649b4dbaac0 h1:1ETNCLJnfVB1jxg7DpoZbW6T7ZEQxtj1Z4n8WpAsug0=
+github.com/JanusDG/real-time-group-chat/transfer v0.0.0-20210915100040-1649b4dbaac0/go.mod h1:qlKUyMh8R3KaeA/Um+yLXYco1ajVOBk6RT0Mz2t1w2I=
+github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
+github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
