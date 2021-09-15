@@ -1,9 +1,19 @@
-package comms
+package transfer
 
-type Mess struct {
+type InitUser struct {
 	Id int 
 }
 
-func NewMess(id int) *Mess {
-	return &Mess{Id: id}
+func NewInitUser(id int) *InitUser {
+	return &InitUser{Id: id}
+}
+
+type Message struct {
+	From int 
+	To int
+	Content string
+}
+
+func NewMessage(from int, to int, content string) *Message {
+	return &Message{From: from, To: to, Content: content}
 }
