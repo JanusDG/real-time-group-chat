@@ -4,6 +4,7 @@ type InitUser struct {
 	Id int 
 }
 
+// uuid library(google) uuid.new()
 func NewInitUser(id int) *InitUser {
 	return &InitUser{Id: id}
 }

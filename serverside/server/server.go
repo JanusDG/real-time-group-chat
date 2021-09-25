@@ -8,24 +8,28 @@ import (
 
 	"github.com/JanusDG/real-time-group-chat/odt"
 	"github.com/gorilla/websocket"
+	"github.com/satori/go.uuid"
+
 )
 
 type Server struct {
+	DB *comms.DataBase
 	Port     int
 	Debug_on bool
 	Upgrader websocket.Upgrader
-	Counter  int
-	Connections []UserConnection
+	ConnectionsMap map[uuid.UUID]*websocket.Conn
+	UserMap map[uuid.UUID]comms.User
+	// Connections []UserConnection
 }
 
-type UserConnection struct {
-	Id 		int
-	Conn 	*websocket.Conn
-}
+// type UserConnection struct {
+// 	Id 		int
+// 	Conn 	*websocket.Conn
+// }
 
-func NewUserConnection(id int,conn *websocket.Conn) *UserConnection{
-	return &UserConnection{Id: id, Conn: conn}
-}
+// func NewUserConnection(id int,conn *websocket.Conn) *UserConnection{
+// 	return &UserConnection{Id: id, Conn: conn}
+// }
 
 // func Init - initializer for server instance
 func (s *Server) Init(port int, DEBUG_ON bool) {
@@ -34,15 +38,80 @@ func (s *Server) Init(port int, DEBUG_ON bool) {
 }
 
 // func NewServer - constructor for server instance
-func NewServer(port int, debug_on bool) *Server {
-	return &Server{Port: port, Debug_on: debug_on, Counter: 1,
+func NewServer(database *comms.DataBase, port int, debug_on bool) *Server {
+	return &Server{DB: database, Port: port, Debug_on: debug_on,
 		Upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
-		}, Connections: make([]UserConnection, 0)}
+		}, 
+		ConnectionsMap: make(map[uuid.UUID]*websocket.Conn),
+		UserMap: make(map[uuid.UUID]comms.User),
+		}
 }
 
-func (s *Server) reader(conn *websocket.Conn) {
+func (s *Server) readerLogin(conn *websocket.Conn,uniqueId uuid.UUID) {
+	for (!s.UserMap[uniqueId].Loginned) {
+		// read in a message
+		_, p, err := conn.ReadMessage()
+		if err != nil {
+			log.Printf("func: reader, error in message read, %s", err)
+			return
+		}
+
+		var u = s.UserMap[uniqueId]
+		u.Name = string(p)
+		u.Loginned = true
+		s.UserMap[uniqueId] = u
+		
+		log.Println("New user with name: " + string(p))
+
+		// write it back
+		// if err := conn.WriteMessage(messageType, []byte("u sent me \""+string(p)+"\"")); err != nil {
+		// 	log.Printf("func: reader, error in message write, %s", err)
+		// 	return
+		// }
+		
+
+	}
+	return
+}
+
+func (s *Server) writerNewInitUser(conn *websocket.Conn) uuid.UUID {
+	var new_uuid = uuid.NewV1()
+	var init = comms.NewInitUser(new_uuid)
+	log.Println("New Client Connected")
+	log.Println(init.Id)
+	var err = conn.WriteJSON(init)
+	if err != nil {
+		log.Println(err)
+	}
+	s.UserMap[new_uuid] = *comms.NewUser("")
+	return new_uuid
+}
+
+func (s *Server) writerContacts(conn *websocket.Conn, name string) {
+	var message = ""
+	for _, group := range s.DB.Groups{
+		for _, member := range group.Members{
+			if member.Name == name {
+				message += "Available group to write: " + group.Name + "\n"
+			}
+		}
+	}
+	for _, user := range s.DB.Users{
+		if user.Name != name {
+			message += "Available user to write: " + user.Name + "\n"
+		}
+	}
+	err := conn.WriteMessage(websocket.TextMessage, []byte(message))
+	if err != nil {
+		log.Println("write:", err)
+		return
+	}
+	return
+}
+
+func (s *Server) readerMesasage(conn *websocket.Conn) {
 	for {
 		var m = comms.Message{}
 		err := conn.ReadJSON(&m)
@@ -51,28 +120,20 @@ func (s *Server) reader(conn *websocket.Conn) {
 		}
 		log.Printf("Got message: %#v\n", m)
 
-		err = s.Connections[1].Conn.WriteJSON(m)
-		if err != nil {
-			log.Println(err)
+		for key, element := range s.UserMap {
+			if m.To == element.Name {
+				// log.Printf(element.Name)
+				// log.Printf(s.ConnectionsMap[key])
+				err = s.ConnectionsMap[key].WriteJSON(m)
+				log.Println("Sended back")
+				if err != nil {
+					log.Println(err)
+				}
+			}
 		}
-		// read in a message
-		// messageType, p, err := conn.ReadMessage()
-		// if err != nil {
-		// 	log.Printf("func: reader, error in message read, %s", err)
-		// 	return
-		// }
-
-		// log.Println("user said " + string(p))
-
-		// // write it back
-		// if err := conn.WriteMessage(messageType, []byte("u sent me \""+string(p)+"\"")); err != nil {
-		// 	log.Printf("func: reader, error in message write, %s", err)
-		// 	return
-		// }
-		
-
 	}
 }
+
 
 func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
@@ -83,21 +144,19 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	log.Println("Client #%s Connected", s.Counter)
-
+	// s.Counter++
+	
 	// Init User
-	var init = comms.NewInitUser(s.Counter)
-	log.Println(init.Id)
-	// err = ws.WriteJSON(init)
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	var newUser = NewUserConnection(s.Counter, ws)
-	s.Connections = append(s.Connections, *newUser)
+	var new_uuid = s.writerNewInitUser(ws)
+	s.ConnectionsMap[new_uuid] = ws
+	s.readerLogin(ws, new_uuid)
+	
+	s.writerContacts(ws, s.UserMap[new_uuid].Name)
+
+	s.readerMesasage(ws)
+	// var newUser = NewUserConnection(s.Counter, ws)
+	// s.Connections = append(s.Connections, *newUser)
 		
-		
-	// TODO make mutex here
-	s.Counter = s.Counter + 1
 
 	// err = ws.WriteMessage(1, []byte("Hi Client!"))
 	// if err != nil {
@@ -106,7 +165,6 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	// listen indefinitely for new messages coming
 	// through on our WebSocket connection
-	s.reader(ws)
 }
 
 func (s *Server) RunServer() {
