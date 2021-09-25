@@ -85,11 +85,15 @@ func (s *Server) writerNewInitUser(conn *websocket.Conn) uuid.UUID {
 	if err != nil {
 		log.Println(err)
 	}
-	s.UserMap[new_uuid] = *comms.NewUser("")
+	var newUser = comms.NewUser("")
+	newUser.Id = new_uuid
+	s.UserMap[new_uuid] = *newUser
 	return new_uuid
 }
 
+// TODO make writing of map with name:key
 func (s *Server) writerContacts(conn *websocket.Conn, name string) {
+	// var ConstactsMap = make(map[uuid.UUID]) 
 	var message = ""
 	for _, group := range s.DB.Groups{
 		for _, member := range group.Members{
@@ -111,7 +115,8 @@ func (s *Server) writerContacts(conn *websocket.Conn, name string) {
 	return
 }
 
-func (s *Server) readerMesasage(conn *websocket.Conn) {
+// TODO add broadcast to group
+func (s *Server) redirectMesasage(conn *websocket.Conn) {
 	for {
 		var m = comms.Message{}
 		err := conn.ReadJSON(&m)
@@ -120,6 +125,26 @@ func (s *Server) readerMesasage(conn *websocket.Conn) {
 		}
 		log.Printf("Got message: %#v\n", m)
 
+		// all this mess will dissapear once server will be connected to bd
+		for _, group := range s.DB.Groups {
+			if group.Name == m.To {
+				for _, member := range group.Members {
+					for key, user := range s.UserMap{
+						if user.Name == member.Name {
+							err = s.ConnectionsMap[key].WriteJSON(m)
+							log.Println("Sended back")
+							
+							if err != nil {
+								log.Println(err)
+							}
+						}
+					}
+					// log.Println(user.Name)
+					// log.Println(user.Id)
+				}
+				return
+			}
+		}
 		for key, element := range s.UserMap {
 			if m.To == element.Name {
 				// log.Printf(element.Name)
@@ -129,6 +154,7 @@ func (s *Server) readerMesasage(conn *websocket.Conn) {
 				if err != nil {
 					log.Println(err)
 				}
+				return
 			}
 		}
 	}
@@ -153,7 +179,7 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	
 	s.writerContacts(ws, s.UserMap[new_uuid].Name)
 
-	s.readerMesasage(ws)
+	s.redirectMesasage(ws)
 	// var newUser = NewUserConnection(s.Counter, ws)
 	// s.Connections = append(s.Connections, *newUser)
 		

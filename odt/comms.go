@@ -43,15 +43,12 @@ func (g *Group) AddToGroup(users ...*User) {
 }
 
 
-
+// TODO posibly merge User and InitUser??
 type User struct {
 	Name string
 	Loginned bool
+	Id uuid.UUID 
 }
-
-// func NewUser(conn *websocket.Conn) *User {
-// 	return &User{Name: "", Loginned: false, Conn: conn}
-// }
 
 func NewUser(name string) *User {
 	return &User{Name: name, Loginned: false}
