@@ -1,73 +1,74 @@
 package comms
 
 import (
-	"github.com/satori/go.uuid"
-	// "github.com/gorilla/websocket"
+	// "github.com/satori/go.uuid"
+	"github.com/gorilla/websocket"
 
 )
 
-type DataBase struct {
-	Groups []Group 
-	Users  []User
-}
+// type DataBase struct {
+// 	Groups []Group 
+// 	Users  []User
+// }
 
-func NewDatabase() *DataBase {
-	return &DataBase {Groups: make([]Group, 0), Users: make([]User, 0)}
-}
+// func NewDatabase() *DataBase {
+// 	return &DataBase {Groups: make([]Group, 0), Users: make([]User, 0)}
+// }
 
-func (d *DataBase) AddUsersToDataBase(users ...*User) {
-	for _, user := range users{
-		d.Users = append(d.Users, *user)
-	}
-}
+// func (d *DataBase) AddUsersToDataBase(users ...*User) {
+// 	for _, user := range users{
+// 		d.Users = append(d.Users, *user)
+// 	}
+// }
 
-func (d *DataBase) AddGroupsToDataBase(groups ...*Group) {
-	for _, group := range groups{
-		d.Groups = append(d.Groups, *group)
-	}
-}
+// func (d *DataBase) AddGroupsToDataBase(groups ...*Group) {
+// 	for _, group := range groups{
+// 		d.Groups = append(d.Groups, *group)
+// 	}
+// }
 
-type Group struct {
-	Name string
-	Members []User
-}
+// type Group struct {
+// 	Name string
+// 	Members []User
+// }
 
-func NewGroup(name string) *Group {
-	return &Group{Name: name, Members: make([]User, 0)}
-}
+// func NewGroup(name string) *Group {
+// 	return &Group{Name: name, Members: make([]User, 0)}
+// }
 
-func (g *Group) AddToGroup(users ...*User) {
-	for _, user := range users{
-		g.Members = append(g.Members, *user)
-	}
-}
+// func (g *Group) AddToGroup(users ...*User) {
+// 	for _, user := range users{
+// 		g.Members = append(g.Members, *user)
+// 	}
+// }
 
 
 // TODO posibly merge User and InitUser??
 type User struct {
-	Name string
-	Loginned bool
-	Id uuid.UUID 
+	UserName string   `json:"username"`
+	Loginned bool 
+	Conn     *websocket.Conn
+	Id string
 }
 
-func NewUser(name string) *User {
-	return &User{Name: name, Loginned: false}
+func NewUser(name string, conn *websocket.Conn) *User {
+	return &User{UserName: name, Conn: conn, Loginned: false}
 }
 
 type InitUser struct {
-	Id uuid.UUID 
+	Id string
 }
 
-func NewInitUser(id uuid.UUID) *InitUser {
+func NewInitUser(id string) *InitUser {
 	return &InitUser{Id: id}
 }
 
 type Message struct {
-	From uuid.UUID 
+	From string
 	To string 
 	Content string
 }
 
-func NewMessage(from uuid.UUID, to string, content string) *Message {
+func NewMessage(from string, to string, content string) *Message {
 	return &Message{From: from, To: to, Content: content}
 }

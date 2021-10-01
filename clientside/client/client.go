@@ -12,15 +12,15 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/JanusDG/real-time-group-chat/odt"
-	"github.com/satori/go.uuid"
+	// "github.com/satori/go.uuid"
 )
 
 type Client struct {
-	Id uuid.UUID
+	Id string
 }
 
 func NewClient() *Client{
-	return &Client{}
+	return &Client{Id: ""}
 }
 
 func (c *Client) Init() {
@@ -46,7 +46,7 @@ func (c *Client) Init() {
 	go func() {
 		defer close(done)
 		for {
-			if (c.Id.Version() == 0){
+			if (c.Id == ""){
 				var init = comms.InitUser{}
 				err := conn.ReadJSON(&init)
 				if err != nil {

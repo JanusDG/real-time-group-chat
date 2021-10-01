@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/JanusDG/real-time-group-chat/serverside/server/database"
 	"github.com/JanusDG/real-time-group-chat/odt"
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
@@ -13,23 +14,14 @@ import (
 )
 
 type Server struct {
-	DB *comms.DataBase
+	DB *database.Database
 	Port     int
 	Debug_on bool
 	Upgrader websocket.Upgrader
-	ConnectionsMap map[uuid.UUID]*websocket.Conn
-	UserMap map[uuid.UUID]comms.User
+	UserMap map[string]comms.User
 	// Connections []UserConnection
 }
 
-// type UserConnection struct {
-// 	Id 		int
-// 	Conn 	*websocket.Conn
-// }
-
-// func NewUserConnection(id int,conn *websocket.Conn) *UserConnection{
-// 	return &UserConnection{Id: id, Conn: conn}
-// }
 
 // func Init - initializer for server instance
 func (s *Server) Init(port int, DEBUG_ON bool) {
@@ -38,18 +30,32 @@ func (s *Server) Init(port int, DEBUG_ON bool) {
 }
 
 // func NewServer - constructor for server instance
-func NewServer(database *comms.DataBase, port int, debug_on bool) *Server {
+func NewServer(database *database.Database, port int, debug_on bool) *Server {
 	return &Server{DB: database, Port: port, Debug_on: debug_on,
 		Upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 		}, 
-		ConnectionsMap: make(map[uuid.UUID]*websocket.Conn),
-		UserMap: make(map[uuid.UUID]comms.User),
+		UserMap: make(map[string]comms.User),
 		}
 }
 
-func (s *Server) readerLogin(conn *websocket.Conn,uniqueId uuid.UUID) {
+func (s *Server) writerNewInitUser(conn *websocket.Conn) string {
+	var new_uuid = uuid.NewV1().String()
+	var init = comms.NewInitUser(new_uuid)
+	log.Println("New Client Connected")
+	log.Println(init.Id)
+	var err = conn.WriteJSON(init)
+	if err != nil {
+		log.Println(err)
+	}
+	var newUser = comms.NewUser("", conn)
+	newUser.Id = new_uuid
+	s.UserMap[new_uuid] = *newUser
+	return new_uuid
+}
+
+func (s *Server) readerLogin(conn *websocket.Conn,uniqueId string) {
 	for (!s.UserMap[uniqueId].Loginned) {
 		// read in a message
 		_, p, err := conn.ReadMessage()
@@ -59,54 +65,26 @@ func (s *Server) readerLogin(conn *websocket.Conn,uniqueId uuid.UUID) {
 		}
 
 		var u = s.UserMap[uniqueId]
-		u.Name = string(p)
+		u.UserName = string(p)
 		u.Loginned = true
 		s.UserMap[uniqueId] = u
+
+		s.DB.InsertIntoUserDB(uniqueId, string(p), "" , "", "")
 		
 		log.Println("New user with name: " + string(p))
-
-		// write it back
-		// if err := conn.WriteMessage(messageType, []byte("u sent me \""+string(p)+"\"")); err != nil {
-		// 	log.Printf("func: reader, error in message write, %s", err)
-		// 	return
-		// }
 		
-
 	}
 	return
 }
 
-func (s *Server) writerNewInitUser(conn *websocket.Conn) uuid.UUID {
-	var new_uuid = uuid.NewV1()
-	var init = comms.NewInitUser(new_uuid)
-	log.Println("New Client Connected")
-	log.Println(init.Id)
-	var err = conn.WriteJSON(init)
-	if err != nil {
-		log.Println(err)
-	}
-	var newUser = comms.NewUser("")
-	newUser.Id = new_uuid
-	s.UserMap[new_uuid] = *newUser
-	return new_uuid
-}
+
 
 // TODO make writing of map with name:key
 func (s *Server) writerContacts(conn *websocket.Conn, name string) {
-	// var ConstactsMap = make(map[uuid.UUID]) 
 	var message = ""
-	for _, group := range s.DB.Groups{
-		for _, member := range group.Members{
-			if member.Name == name {
-				message += "Available group to write: " + group.Name + "\n"
-			}
-		}
-	}
-	for _, user := range s.DB.Users{
-		if user.Name != name {
-			message += "Available user to write: " + user.Name + "\n"
-		}
-	}
+
+	// TODO Send available contacts here
+
 	err := conn.WriteMessage(websocket.TextMessage, []byte(message))
 	if err != nil {
 		log.Println("write:", err)
@@ -125,37 +103,14 @@ func (s *Server) redirectMesasage(conn *websocket.Conn) {
 		}
 		log.Printf("Got message: %#v\n", m)
 
-		// all this mess will dissapear once server will be connected to bd
-		for _, group := range s.DB.Groups {
-			if group.Name == m.To {
-				for _, member := range group.Members {
-					for key, user := range s.UserMap{
-						if user.Name == member.Name {
-							err = s.ConnectionsMap[key].WriteJSON(m)
-							log.Println("Sended back")
-							
-							if err != nil {
-								log.Println(err)
-							}
-						}
-					}
-					// log.Println(user.Name)
-					// log.Println(user.Id)
-				}
-				return
-			}
-		}
-		for key, element := range s.UserMap {
-			if m.To == element.Name {
-				// log.Printf(element.Name)
-				// log.Printf(s.ConnectionsMap[key])
-				err = s.ConnectionsMap[key].WriteJSON(m)
-				log.Println("Sended back")
-				if err != nil {
-					log.Println(err)
-				}
-				return
-			}
+		var key = s.DB.GetUserIdByUsername(string(m.To))
+
+		// log.Println(key)
+		err = s.UserMap[key].Conn.WriteJSON(m)
+		log.Println("Sended back")
+		
+		if err != nil {
+			log.Println(err)
 		}
 	}
 }
@@ -174,10 +129,13 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	
 	// Init User
 	var new_uuid = s.writerNewInitUser(ws)
-	s.ConnectionsMap[new_uuid] = ws
+	var u = s.UserMap[new_uuid]
+	u.Conn = ws
+	s.UserMap[new_uuid] = u
+
 	s.readerLogin(ws, new_uuid)
 	
-	s.writerContacts(ws, s.UserMap[new_uuid].Name)
+	s.writerContacts(ws, s.UserMap[new_uuid].UserName)
 
 	s.redirectMesasage(ws)
 	// var newUser = NewUserConnection(s.Counter, ws)
