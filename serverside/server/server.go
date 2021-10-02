@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	// "fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -125,8 +125,6 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	// s.Counter++
-	
 	// Init User
 	var new_uuid = s.writerNewInitUser(ws)
 	var u = s.UserMap[new_uuid]
@@ -138,30 +136,20 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	s.writerContacts(ws, s.UserMap[new_uuid].UserName)
 
 	s.redirectMesasage(ws)
-	// var newUser = NewUserConnection(s.Counter, ws)
-	// s.Connections = append(s.Connections, *newUser)
-		
 
-	// err = ws.WriteMessage(1, []byte("Hi Client!"))
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-
-	// listen indefinitely for new messages coming
-	// through on our WebSocket connection
 }
 
 func (s *Server) RunServer() {
-	http.Handle("/", http.FileServer(http.Dir("./static")))
+	// http.Handle("/", http.FileServer(http.Dir("./static")))
 
-	http.HandleFunc("/connect", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/websocket.html")
-	})
+	// http.HandleFunc("/connect", func(w http.ResponseWriter, r *http.Request) {
+	// 	http.ServeFile(w, r, "./static/websocket.html")
+	// })
 	http.HandleFunc("/ws", s.wsEndpoint)
 
-	http.HandleFunc(
-		"/hello",
-		func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "hello") })
+	// http.HandleFunc(
+	// 	"/hello",
+	// 	func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "hello") })
 
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(s.Port), nil))
 }

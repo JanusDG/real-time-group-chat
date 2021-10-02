@@ -12,18 +12,24 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/JanusDG/real-time-group-chat/odt"
+	"github.com/JanusDG/real-time-group-chat/clientside/client/front"
 	// "github.com/satori/go.uuid"
 )
 
 type Client struct {
 	Id string
+	Webserver front.WebServer
 }
 
 func NewClient() *Client{
-	return &Client{Id: ""}
+	return &Client{Id: "", Webserver: *front.NewWebServer(8081)}
 }
 
 func (c *Client) Init() {
+	c.Webserver.RunWeb()
+	go log.Printf(c.Webserver.GetUserData()["username"])
+	// log.Printf("hi")
+	return
 	var addr = flag.String("addr", "localhost:8080", "http service address")
 
 	flag.Parse()
