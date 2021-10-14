@@ -1,6 +1,8 @@
 # real-time-group-chat
 
 # Usage
+0. prerun. create the db with the creadentials located in serverside/server/database/db.go
+</br> the sql file for the tables located in serverside/server/database/createtables.sql
 1. in the directory serverside/ 
 ```make run```
 2. in the directory clientside/ 
