@@ -5,7 +5,6 @@ import (
 	"log"
 	"database/sql"
 	_ "github.com/lib/pq"	
-	// "github.com/satori/go.uuid"
 )
 
 
@@ -56,18 +55,6 @@ func (db *Database) InsertIntoUserDB(user_id string, username string, name strin
 	"\n('%s','%s','%s','%s','%s')",user_id, username, name , surname, password)
 	db.LaunchQuery(query)
 }
-
-// func (db *Database) InsertIntoGroupDB(group_id string, group_name string) {
-// 	var query = fmt.Sprintf("INSERT INTO _group (group_id, username) VALUES"+
-// 	"\n('%s','%s')", group_id, group_name)
-// 	db.LaunchQuery(query)
-// }
-
-// func (db *Database) AddToGroupDB(group_id string, user_id string ) {
-// 	var query = fmt.Sprintf("INSERT INTO _usergroup (group_id, user_id) VALUES"+
-// 	"\n('%s','%s')", group_id, user_id)
-// 	db.LaunchQuery(query)
-// }
 
 func (db *Database) LaunchQuery(query string){
 	command, err := db.DB.Query(query)

@@ -1,41 +1,18 @@
-<!-- <!DOCTYPE html>
 <html>
     <head>
         <link rel="stylesheet" href="css/style.css">
     </head>
-
     <body>
-    <div class="container" id="container">
-        <div class="form-container sign-in-container">
-
-            <form action="/login" method="post" id="search-form">
-                <h1 class="heading">Увійти</h1>
-                <input type="email" name = "username" class="param-input mt-20" placeholder="Електронна пошта" id="email" value="Anna@a"/>
-                <input type="password" class="param-input" placeholder="Пароль" id="password" value="qwerty123"/>
-
-                <button type="button" class="custom-btn" id="login">Увійти</button>
-                <p id="message"></p>
-                <a href="/" class="mt-20">Повернутися на головну сторінку</a>
-            </form>
+        <div class="container" id="container">
+            <div class="form-container sign-in-container">
+                <form action="/user_login" method="post">
+                    Username:<input type="text" name="username">
+                    Password:<input type="password" name="password">
+                    <input href="/hello" type="submit" value="Login" id="press">
+                    <a href="/" class="mt-20">Повернутися на головну сторінку</a>
+                </form>
+            </div>
         </div>
-    </div>
-    
-    
-
-    </body>
-</html> -->
-
-<html>
-    <head>
-    <title></title>
-    </head>
-    <body>
-        <form action="/user_login" method="post">
-            Username:<input type="text" name="username">
-            Password:<input type="password" name="password">
-            <input href="/hello" type="submit" value="Login" id="press">
-            <a href="/" class="mt-20">Повернутися на головну сторінку</a>
-        </form>
     <script>
         document.getElementById('press').addEventListener('click', async function(evt){
             window.location.href = "/hello";

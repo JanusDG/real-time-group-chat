@@ -1,47 +1,9 @@
 package comms
 
 import (
-	// "github.com/satori/go.uuid"
 	"github.com/gorilla/websocket"
 
 )
-
-// type DataBase struct {
-// 	Groups []Group 
-// 	Users  []User
-// }
-
-// func NewDatabase() *DataBase {
-// 	return &DataBase {Groups: make([]Group, 0), Users: make([]User, 0)}
-// }
-
-// func (d *DataBase) AddUsersToDataBase(users ...*User) {
-// 	for _, user := range users{
-// 		d.Users = append(d.Users, *user)
-// 	}
-// }
-
-// func (d *DataBase) AddGroupsToDataBase(groups ...*Group) {
-// 	for _, group := range groups{
-// 		d.Groups = append(d.Groups, *group)
-// 	}
-// }
-
-// type Group struct {
-// 	Name string
-// 	Members []User
-// }
-
-// func NewGroup(name string) *Group {
-// 	return &Group{Name: name, Members: make([]User, 0)}
-// }
-
-// func (g *Group) AddToGroup(users ...*User) {
-// 	for _, user := range users{
-// 		g.Members = append(g.Members, *user)
-// 	}
-// }
-
 
 // TODO posibly merge User and InitUser??
 type User struct {
@@ -55,12 +17,31 @@ func NewUser(name string, conn *websocket.Conn) *User {
 	return &User{UserName: name, Conn: conn, Loginned: false}
 }
 
-type InitUser struct {
+type InitId struct {
 	Id string
 }
 
-func NewInitUser(id string) *InitUser {
-	return &InitUser{Id: id}
+func NewInitId(id string) *InitId {
+	return &InitId{Id: id}
+}
+
+type InitUser struct {
+	Name string
+	Password string
+}
+
+func NewInitUser(name string, password string) *InitUser {
+	return &InitUser{Name: name, Password: password}
+}
+
+type UsersOption struct {
+	Users []string
+}
+
+
+
+func NewUsersOption(users []string) *UsersOption {
+	return &UsersOption{Users: users}
 }
 
 type Message struct {

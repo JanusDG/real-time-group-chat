@@ -7,29 +7,37 @@ import (
 	"os"
 	"os/signal"
 	"time"
-	"bufio"
-	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/JanusDG/real-time-group-chat/odt"
 	"github.com/JanusDG/real-time-group-chat/clientside/client/front"
-	// "github.com/satori/go.uuid"
 )
 
 type Client struct {
 	Id string
 	Webserver front.WebServer
+	WgAuth *sync.WaitGroup
+	WgContacts *sync.WaitGroup
+	WgSendMessage *sync.WaitGroup
+	WgReadMessage *sync.WaitGroup
 }
 
 func NewClient() *Client{
-	return &Client{Id: "", Webserver: *front.NewWebServer(8081)}
+	var wgA = &sync.WaitGroup{}
+	wgA.Add(1)
+	var wgC = &sync.WaitGroup{}
+	wgC.Add(1)
+	var wgS = &sync.WaitGroup{}
+	wgS.Add(1)
+	var wgR = &sync.WaitGroup{}
+	wgR.Add(1)
+	return &Client{Id: "", WgAuth: wgA,WgReadMessage:wgR, WgContacts:wgC, WgSendMessage:wgS, Webserver: *front.NewWebServer(8082, wgA, wgC, wgS, wgR)}
 }
 
 func (c *Client) Init() {
-	c.Webserver.RunWeb()
-	go log.Printf(c.Webserver.GetUserData()["username"])
-	// log.Printf("hi")
-	return
+	go c.Webserver.RunWeb()
+
 	var addr = flag.String("addr", "localhost:8080", "http service address")
 
 	flag.Parse()
@@ -53,7 +61,7 @@ func (c *Client) Init() {
 		defer close(done)
 		for {
 			if (c.Id == ""){
-				var init = comms.InitUser{}
+				var init = comms.InitId{}
 				err := conn.ReadJSON(&init)
 				if err != nil {
 					log.Println("Error reading json.", err)
@@ -62,56 +70,45 @@ func (c *Client) Init() {
 				}
 			}
 
-			_, p, err := conn.ReadMessage()
-			if err != nil {
-				log.Printf("func: reader, error in message read, %s", err)
-				return
-			}else{
-				log.Printf(string(p))
-			}
+			var uo = comms.UsersOption{}
+			err = conn.ReadJSON(&uo)
+			c.Webserver.Contacts = &uo.Users
+			c.WgContacts.Done()
 
 			var m = comms.Message{}
 			err = conn.ReadJSON(&m)
 			if err != nil {
 				log.Println("Error reading json.", err)
 			}else{
-				// c.Id = init.Id
-				// log.Printf("Got message: %#v\n", m)
-				log.Printf("Got message: %s\n", m.Content)
+				var recieveMap = make(map[string]string)
+				recieveMap["from"] = m.From
+				recieveMap["content"] = m.Content
+				c.Webserver.RecieveData = &recieveMap
+				c.WgReadMessage.Done()
 			}
 
 			
 		}
 	}()
 
-	// inputInit := make(chan []string)
 	inputInit := make(chan string)
 	defer close(inputInit)
 	
 	finished := make(chan bool)
 	defer close(finished)
 	go func() {
-		// for {			
-		log.Println("What's ur name?")
-		text, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-		// var split = strings.Split(text, " ")
-		// inputInit<-split
-		inputInit<-text
+		inputInit<-"text"
 		finished <- true
 		return
-		// }
 	}()
 	
 	input := make(chan string)
 	defer close(input)
 	go func (finished chan bool){
 		<- finished
-		for {
-			log.Println("Write message")
-			text, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-			// inputInit<-split
-			input<-text
-		}
+		c.WgContacts.Wait()
+		input<-"text"
+		// }
 		return 
 	}(finished)
 	
@@ -120,32 +117,34 @@ func (c *Client) Init() {
 		select {
 		case <-done:
 			return
-		case in := <-inputInit:
-			in = strings.TrimSpace(in)
-			err := conn.WriteMessage(websocket.TextMessage, []byte(in))
-			if err != nil {
-				log.Println("write:", err)
-				return
+		case <-inputInit:
+			c.WgAuth.Wait()
+			var m = c.Webserver.GetUserData()
+			for k, v := range m {
+				var message = comms.NewInitUser(k, v)
+				
+				var err = conn.WriteJSON(message)
+				if err != nil {
+					log.Println(err)
+				}
 			}
 
-		case inn := <-input:
-			// TODO handle the case if id is not defined yet
-			// if user connected 
-			var split = strings.Split(inn, " ")
-			if len(split) != 2 {
-				log.Println("Invalid input")
-				return 
-			}
+		case <-input:
 			
-			log.Printf("u typed %s, to %s", strings.TrimSpace(split[1]), strings.TrimSpace(split[0]))
-			// if (false){
-			var message = comms.NewMessage(c.Id, strings.TrimSpace(split[0]), strings.TrimSpace(split[1]))
+			c.WgSendMessage.Wait()
+
+			var messageMap = c.Webserver.MessageData
+
+			var message *comms.Message
+			for k, v := range messageMap {
+				message = comms.NewMessage(c.Id, k, v)
+
+			}
 			
 			var err = conn.WriteJSON(message)
 			if err != nil {
 				log.Println(err)
 			}
-			// }
 			
 
 		case <-interrupt:
@@ -164,4 +163,3 @@ func (c *Client) Init() {
 		}
 	}
 }
-

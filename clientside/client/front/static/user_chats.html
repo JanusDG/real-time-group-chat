@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        {{.Title}}
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+
+    <body>
+    <div class="container" id="container">
+        <div class="form-container sign-in-container">
+            <h1 class="heading">Надіслати повідомлення</h1>
+            <form action="/user_chats" method="post" id="search-form" class="mt-20">
+                <select id="select_style" class="custom-select" name="to_user">
+                    <option selected="selected" disabled>Отримувач</option>
+                    {{range .Contacts}}
+                        <option>{{.}}</option>
+                    {{end}}
+                </select>
+                
+
+                Message:<input type="text" name="message">
+                <input href="/hello" type="submit" value="Send" id="press">
+                <!-- <button type="button" type="submit" class="custom-btn" id="create">Надіслати</button></br>   -->
+                <p id="message"></p>
+                <a href="/" class="mt-20">Повернутися на головну сторінку</a>
+                <a href="/user_messages" class="mt-20">Перевірити повідомлення</a>
+                <a href="/user_proceed" class="mt-20">Назад</a>
+            </form>
+        </div>
+    </div>
+
+    </body>
+</html>

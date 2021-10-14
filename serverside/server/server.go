@@ -19,7 +19,6 @@ type Server struct {
 	Debug_on bool
 	Upgrader websocket.Upgrader
 	UserMap map[string]comms.User
-	// Connections []UserConnection
 }
 
 
@@ -40,9 +39,9 @@ func NewServer(database *database.Database, port int, debug_on bool) *Server {
 		}
 }
 
-func (s *Server) writerNewInitUser(conn *websocket.Conn) string {
+func (s *Server) writerNewInitId(conn *websocket.Conn) string {
 	var new_uuid = uuid.NewV1().String()
-	var init = comms.NewInitUser(new_uuid)
+	var init = comms.NewInitId(new_uuid)
 	log.Println("New Client Connected")
 	log.Println(init.Id)
 	var err = conn.WriteJSON(init)
@@ -58,20 +57,18 @@ func (s *Server) writerNewInitUser(conn *websocket.Conn) string {
 func (s *Server) readerLogin(conn *websocket.Conn,uniqueId string) {
 	for (!s.UserMap[uniqueId].Loginned) {
 		// read in a message
-		_, p, err := conn.ReadMessage()
+		var m = comms.InitUser{}
+		err := conn.ReadJSON(&m)
 		if err != nil {
-			log.Printf("func: reader, error in message read, %s", err)
-			return
+			log.Println("Error reading json.", err)
 		}
-
 		var u = s.UserMap[uniqueId]
-		u.UserName = string(p)
+		u.UserName = string(m.Name)
 		u.Loginned = true
 		s.UserMap[uniqueId] = u
 
-		s.DB.InsertIntoUserDB(uniqueId, string(p), "" , "", "")
-		
-		log.Println("New user with name: " + string(p))
+		s.DB.InsertIntoUserDB(uniqueId, string(m.Name), "" , "", "")
+		log.Println("New user with name: " + string(m.Name))
 		
 	}
 	return
@@ -81,11 +78,13 @@ func (s *Server) readerLogin(conn *websocket.Conn,uniqueId string) {
 
 // TODO make writing of map with name:key
 func (s *Server) writerContacts(conn *websocket.Conn, name string) {
-	var message = ""
+	var users []string
+	for _, v := range s.UserMap {
+        users = append(users, v.UserName)
+    }
+	var init = comms.NewUsersOption(users)
+	var err = conn.WriteJSON(init)
 
-	// TODO Send available contacts here
-
-	err := conn.WriteMessage(websocket.TextMessage, []byte(message))
 	if err != nil {
 		log.Println("write:", err)
 		return
@@ -126,7 +125,7 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Init User
-	var new_uuid = s.writerNewInitUser(ws)
+	var new_uuid = s.writerNewInitId(ws)
 	var u = s.UserMap[new_uuid]
 	u.Conn = ws
 	s.UserMap[new_uuid] = u
@@ -140,16 +139,6 @@ func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) RunServer() {
-	// http.Handle("/", http.FileServer(http.Dir("./static")))
-
-	// http.HandleFunc("/connect", func(w http.ResponseWriter, r *http.Request) {
-	// 	http.ServeFile(w, r, "./static/websocket.html")
-	// })
 	http.HandleFunc("/ws", s.wsEndpoint)
-
-	// http.HandleFunc(
-	// 	"/hello",
-	// 	func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "hello") })
-
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(s.Port), nil))
 }
