@@ -1,0 +1,22 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+    <body>
+        <div class="container" id="container">
+            <div class="form-container sign-in-container">
+                <form action="/user_login" method="post">
+                    Username:<input type="text" name="username">
+                    Password:<input type="password" name="password">
+                    <input href="/hello" type="submit" value="Login" id="press">
+                    <a href="/" class="mt-20">Повернутися на головну сторінку</a>
+                </form>
+            </div>
+        </div>
+    <script>
+        document.getElementById('press').addEventListener('click', async function(evt){
+            window.location.href = "/hello";
+        });
+    </script>
+    </body>
+</html>

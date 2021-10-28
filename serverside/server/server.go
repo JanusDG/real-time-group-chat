@@ -1,25 +1,26 @@
 package server
 
 import (
-	"fmt"
+	// "fmt"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/JanusDG/real-time-group-chat/transfer"
+	"github.com/JanusDG/real-time-group-chat/serverside/server/database"
+	"github.com/JanusDG/real-time-group-chat/odt"
 	"github.com/gorilla/websocket"
+	"github.com/satori/go.uuid"
+
 )
 
 type Server struct {
+	DB *database.Database
 	Port     int
 	Debug_on bool
 	Upgrader websocket.Upgrader
-	Counter  int
+	UserMap map[string]comms.User
 }
 
-type UserInit struct {
-	id int
-}
 
 // func Init - initializer for server instance
 func (s *Server) Init(port int, DEBUG_ON bool) {
@@ -28,77 +29,116 @@ func (s *Server) Init(port int, DEBUG_ON bool) {
 }
 
 // func NewServer - constructor for server instance
-func NewServer(port int, debug_on bool) *Server {
-	return &Server{Port: port, Debug_on: debug_on, Counter: 1,
+func NewServer(database *database.Database, port int, debug_on bool) *Server {
+	return &Server{DB: database, Port: port, Debug_on: debug_on,
 		Upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
-		}}
+		}, 
+		UserMap: make(map[string]comms.User),
+		}
 }
 
-func (s *Server) reader(conn *websocket.Conn) {
-	for {
+func (s *Server) writerNewInitId(conn *websocket.Conn) string {
+	var new_uuid = uuid.NewV1().String()
+	var init = comms.NewInitId(new_uuid)
+	log.Println("New Client Connected")
+	log.Println(init.Id)
+	var err = conn.WriteJSON(init)
+	if err != nil {
+		log.Println(err)
+	}
+	var newUser = comms.NewUser("", conn)
+	newUser.Id = new_uuid
+	s.UserMap[new_uuid] = *newUser
+	return new_uuid
+}
+
+func (s *Server) readerLogin(conn *websocket.Conn,uniqueId string) {
+	for (!s.UserMap[uniqueId].Loginned) {
 		// read in a message
-		messageType, p, err := conn.ReadMessage()
+		var m = comms.InitUser{}
+		err := conn.ReadJSON(&m)
 		if err != nil {
-			log.Printf("func: reader, error in message read, %s", err)
-			return
+			log.Println("Error reading json.", err)
 		}
+		var u = s.UserMap[uniqueId]
+		u.UserName = string(m.Name)
+		u.Loginned = true
+		s.UserMap[uniqueId] = u
 
-		log.Println("user said " + string(p))
+		s.DB.InsertIntoUserDB(uniqueId, string(m.Name), "" , "", "")
+		log.Println("New user with name: " + string(m.Name))
+		
+	}
+	return
+}
 
-		// write it back
-		if err := conn.WriteMessage(messageType, []byte("u sent me \""+string(p)+"\"")); err != nil {
-			log.Printf("func: reader, error in message write, %s", err)
-			return
+
+
+// TODO make writing of map with name:key
+func (s *Server) writerContacts(conn *websocket.Conn, name string) {
+	var users []string
+	for _, v := range s.UserMap {
+        users = append(users, v.UserName)
+    }
+	var init = comms.NewUsersOption(users)
+	var err = conn.WriteJSON(init)
+
+	if err != nil {
+		log.Println("write:", err)
+		return
+	}
+	return
+}
+
+// TODO add broadcast to group
+func (s *Server) redirectMesasage(conn *websocket.Conn) {
+	for {
+		var m = comms.Message{}
+		err := conn.ReadJSON(&m)
+		if err != nil {
+			log.Println("Error reading json.", err)
 		}
+		log.Printf("Got message: %#v\n", m)
 
+		var key = s.DB.GetUserIdByUsername(string(m.To))
+
+		// log.Println(key)
+		err = s.UserMap[key].Conn.WriteJSON(m)
+		log.Println("Sended back")
+		
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
+
 
 func (s *Server) wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	s.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	// upgrade this connection to a WebSocket
-	// connection
 	ws, err := s.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 	}
 
-	log.Println("Client Connected")
-	var init = comms.NewMess(s.Counter)
-	// TODO make mutex here
-	s.Counter = s.Counter + 1
-	log.Println(init.Id)
-	err = ws.WriteJSON(init)
-	if err != nil {
-		log.Println(err)
-	}
+	// Init User
+	var new_uuid = s.writerNewInitId(ws)
+	var u = s.UserMap[new_uuid]
+	u.Conn = ws
+	s.UserMap[new_uuid] = u
 
-	// err = ws.WriteMessage(1, []byte("Hi Client!"))
-	// if err != nil {
-	// 	log.Println(err)
-	// }
+	s.readerLogin(ws, new_uuid)
+	
+	s.writerContacts(ws, s.UserMap[new_uuid].UserName)
 
-	// listen indefinitely for new messages coming
-	// through on our WebSocket connection
+	s.redirectMesasage(ws)
 
-	s.reader(ws)
 }
 
 func (s *Server) RunServer() {
-	http.Handle("/", http.FileServer(http.Dir("./static")))
-
-	http.HandleFunc("/connect", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/websocket.html")
-	})
 	http.HandleFunc("/ws", s.wsEndpoint)
-
-	http.HandleFunc(
-		"/hello",
-		func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "hello") })
-
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(s.Port), nil))
 }

@@ -1,5 +1,0 @@
-DEBUG_ON: true
-
-server:
-  port: 8080
-  DEBUG_ON: true
